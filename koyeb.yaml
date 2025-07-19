@@ -1,0 +1,16 @@
+services:
+  - name: coupon-recommender
+    ports:
+      - port: 8000
+        http: true
+    env:
+      - name: API_BASE_URL
+        value: "http://localhost:8000"  # For internal cron calls
+      - name: EXPO_PUBLIC_SUPABASE_URL
+        secret: true
+      - name: EXPO_PUBLIC_SUPABASE_ANON_KEY
+        secret: true
+    docker:
+      image: koyeb/coupon-recommender
+      args:
+        build: .

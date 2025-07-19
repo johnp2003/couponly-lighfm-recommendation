@@ -1,0 +1,1 @@
+0 2 * * * root /usr/bin/python3 /app/retrain.py >> /var/log/cron.log 2>&1
