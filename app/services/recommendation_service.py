@@ -187,7 +187,7 @@ class RecommendationService:
             
             # Generate recommendations
             try:
-                recommendations = await self.rec_system.get_recommendations(user_id, num_recommendations)
+                recommendations = self.rec_system.get_recommendations(user_id, num_recommendations)
                 
                 result = {
                     "user_id": user_id,
@@ -209,13 +209,13 @@ class RecommendationService:
     async def get_similar_items(self, coupon_id: str, num_similar: int = 5) -> List[Dict[str, Any]]:
         """Get similar items"""
         if self.rec_system:
-            return await self.rec_system.get_similar_items(coupon_id, num_similar)
+            return self.rec_system.get_similar_items(coupon_id, num_similar)
         return []
     
     async def get_model_metrics(self) -> Dict[str, Any]:
         """Get model performance metrics"""
         if self.rec_system:
-            metrics = await self.rec_system.evaluate_model()
+            metrics = self.rec_system.evaluate_model()
             metrics['timestamp'] = datetime.now().isoformat()
             return metrics
         return {"error": "Model not trained"}
@@ -240,15 +240,15 @@ class RecommendationService:
             
             # Load fresh data
             self.data_loader = CouponDataLoader(db)
-            if not await self.data_loader.load_all_data():
+            if not self.data_loader.load_all_data():
                 return False
             
             # Build and train model
             self.rec_system = LightFMRecommendationSystem(self.data_loader)
-            await self.rec_system.prepare_dataset()
-            await self.rec_system.build_interaction_matrix()
-            await self.rec_system.build_feature_matrices()
-            await self.rec_system.train_model(epochs=50)  # Reduced epochs for faster training
+            self.rec_system.prepare_dataset()
+            self.rec_system.build_interaction_matrix()
+            self.rec_system.build_feature_matrices()
+            self.rec_system.train_model(epochs=50)  # Reduced epochs for faster training
             
             # Cache the model
             await self.save_model_cache()

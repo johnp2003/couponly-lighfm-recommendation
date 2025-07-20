@@ -35,7 +35,16 @@ class SupabaseConnector:
                 cache_buster = int(time.time())
                 print(f"🔄 Executing {func_name}() with cache buster: {cache_buster}")
                 
-                result = self.client.rpc(func_name).execute()
+                # Try calling RPC function with empty params first, then without params
+                try:
+                    result = self.client.rpc(func_name, {}).execute()
+                except Exception as e:
+                    if "missing 1 required positional argument: 'params'" in str(e):
+                        # Try with explicit empty params
+                        result = self.client.rpc(func_name, params={}).execute()
+                    else:
+                        # Try without params (older API)
+                        result = self.client.rpc(func_name).execute()
                 
                 if result.data:
                     df = pd.DataFrame(result.data)
@@ -70,7 +79,7 @@ class CouponDataLoader:
         self.popular_coupons_df = None
         self.all_coupons_df = None
         
-    async def load_all_data(self) -> bool:
+    def load_all_data(self) -> bool:
         """Load all required data from database"""
         print("📊 Loading interaction data with cache clearing...")
         
@@ -90,7 +99,7 @@ class CouponDataLoader:
         self.popular_coupons_df = self.db.execute_query(query)
         
         # Load ALL active coupons
-        await self.load_all_active_coupons()
+        self.load_all_active_coupons()
         
         print(f"✅ Loaded {len(self.interactions_df)} interactions")
         print(f"✅ Loaded {len(self.user_features_df)} users")
@@ -100,7 +109,7 @@ class CouponDataLoader:
         
         return self.validate_data()
     
-    async def load_all_active_coupons(self):
+    def load_all_active_coupons(self):
         """Load ALL active regular coupons (excluding vendor coupons)"""
         try:
             # Get all active regular coupons only

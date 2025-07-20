@@ -30,7 +30,7 @@ class LightFMRecommendationSystem:
         self.user_features_matrix = None
         self.item_features_matrix = None
         
-    async def prepare_dataset(self):
+    def prepare_dataset(self):
         """Prepare LightFM dataset"""
         print("\n🔧 Preparing LightFM dataset...")
         
@@ -71,7 +71,7 @@ class LightFMRecommendationSystem:
         print(f"✅ Dataset prepared with {len(users)} users and {len(items)} items")
         print(f"🎯 Now ALL active coupons can be recommended!")
         
-    async def build_interaction_matrix(self):
+    def build_interaction_matrix(self):
         """Build interaction matrices"""
         print("\n🔨 Building interaction matrices...")
         
@@ -109,7 +109,7 @@ class LightFMRecommendationSystem:
         print(f"✅ Train interactions: {self.train_interactions.nnz}")
         print(f"✅ Test interactions: {self.test_interactions.nnz}")
         
-    async def build_feature_matrices(self):
+    def build_feature_matrices(self):
         """Build feature matrices"""
         print("\n🎯 Building feature matrices...")
         
@@ -125,7 +125,7 @@ class LightFMRecommendationSystem:
         print(f"✅ Item features matrix: {self.item_features_matrix.shape}")
         print("🔧 Using identity matrices to avoid feature confusion")
         
-    async def train_model(self, loss='warp', learning_rate=0.05, no_components=50, epochs=100):
+    def train_model(self, loss='warp', learning_rate=0.05, no_components=50, epochs=100):
         """Train the LightFM model"""
         print(f"\n🚀 Training LightFM model...")
         print(f"   Loss: {loss}")
@@ -150,7 +150,7 @@ class LightFMRecommendationSystem:
         
         print("✅ Model training completed!")
         
-    async def evaluate_model(self) -> Dict[str, float]:
+    def evaluate_model(self) -> Dict[str, float]:
         """Evaluate model performance"""
         print("\n📊 Evaluating model performance...")
         
@@ -192,7 +192,7 @@ class LightFMRecommendationSystem:
             'test_auc': float(test_auc)
         }
     
-    async def get_recommendations(self, user_id: str, num_recommendations: int = 10, filter_seen: bool = True) -> List[Dict[str, Any]]:
+    def get_recommendations(self, user_id: str, num_recommendations: int = 10, filter_seen: bool = True) -> List[Dict[str, Any]]:
         """Get recommendations for a user"""
         if user_id not in self.user_id_map:
             print(f"❌ User {user_id} not found in training data")
@@ -273,7 +273,7 @@ class LightFMRecommendationSystem:
         """Fallback for new users - return popular coupons"""
         return self.data_loader.popular_coupons_df.head(num_recommendations).to_dict('records')
     
-    async def get_similar_items(self, coupon_id: str, num_similar: int = 5) -> List[Dict[str, Any]]:
+    def get_similar_items(self, coupon_id: str, num_similar: int = 5) -> List[Dict[str, Any]]:
         """Get similar coupons"""
         if coupon_id not in self.item_id_map:
             print(f"❌ Coupon {coupon_id} not found")
