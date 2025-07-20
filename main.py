@@ -18,7 +18,9 @@ from app.models.schemas import (
     SimilarItemsRequest,
     SimilarItemsResponse,
     HealthResponse,
-    ModelStatusResponse
+    ModelStatusResponse,
+    PopularCouponsRequest,
+    PopularCouponsResponse
 )
 
 # Initialize FastAPI app
@@ -128,6 +130,47 @@ async def get_model_metrics():
         return metrics
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Metrics retrieval failed: {str(e)}")
+
+@app.post("/popular-coupons", response_model=PopularCouponsResponse)
+async def get_popular_coupons(request: PopularCouponsRequest):
+    """Get popular/trending coupons"""
+    try:
+        popular_coupons = await recommendation_service.get_popular_coupons(
+            limit=request.limit,
+            category=request.category
+        )
+        
+        if "error" in popular_coupons:
+            raise HTTPException(status_code=500, detail=popular_coupons["error"])
+        
+        return PopularCouponsResponse(**popular_coupons)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Popular coupons retrieval failed: {str(e)}")
+
+@app.get("/popular-coupons", response_model=PopularCouponsResponse)
+async def get_popular_coupons_get(
+    limit: int = 20,
+    category: Optional[str] = None
+):
+    """Get popular/trending coupons (GET endpoint)"""
+    try:
+        popular_coupons = await recommendation_service.get_popular_coupons(
+            limit=limit,
+            category=category
+        )
+        
+        if "error" in popular_coupons:
+            raise HTTPException(status_code=500, detail=popular_coupons["error"])
+        
+        return PopularCouponsResponse(**popular_coupons)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Popular coupons retrieval failed: {str(e)}")
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))

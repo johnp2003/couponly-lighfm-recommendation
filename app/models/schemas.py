@@ -73,3 +73,28 @@ class ModelMetrics(BaseModel):
     train_auc: Optional[float] = None
     test_auc: Optional[float] = None
     timestamp: str
+
+class PopularCouponsRequest(BaseModel):
+    limit: int = Field(default=20, ge=1, le=100, description="Number of popular coupons to return")
+    category: Optional[str] = Field(default=None, description="Filter by category (optional)")
+
+class PopularCoupon(BaseModel):
+    coupon_id: str
+    title: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    discount_percentage: Optional[float] = None
+    expires_at: Optional[str] = None
+    popularity_score: Optional[float] = None
+    view_count: Optional[int] = None
+    save_count: Optional[int] = None
+    vote_score: Optional[float] = None
+    coupon_type: Optional[str] = None
+    days_until_expiry: Optional[int] = None
+    is_trending: Optional[bool] = None
+
+class PopularCouponsResponse(BaseModel):
+    popular_coupons: List[PopularCoupon]
+    total_count: int
+    category_filter: Optional[str] = None
+    timestamp: str

@@ -212,6 +212,118 @@ class RecommendationService:
             return self.rec_system.get_similar_items(coupon_id, num_similar)
         return []
     
+    async def get_popular_coupons(self, limit: int = 20, category: Optional[str] = None) -> Dict[str, Any]:
+        """Get popular/trending coupons"""
+        try:
+            # Ensure we have data loaded
+            if self.data_loader is None or self.data_loader.popular_coupons_df is None:
+                # Try to get fresh popular coupons data
+                url, key = get_supabase_credentials()
+                if not url or not key:
+                    return {"error": "Database credentials not available"}
+                
+                db = SupabaseConnector(url, key)
+                if not db.connect():
+                    return {"error": "Database connection failed"}
+                
+                # Load just popular coupons data
+                query = "SELECT * FROM get_popular_coupons()"
+                popular_df = db.execute_query(query)
+                db.close()
+                
+                if popular_df is None or popular_df.empty:
+                    return {"error": "No popular coupons data available"}
+            else:
+                popular_df = self.data_loader.popular_coupons_df.copy()
+            
+            # Filter by category if specified
+            if category:
+                popular_df = popular_df[popular_df['category'].str.lower() == category.lower()]
+            
+            # Sort by popularity score (assuming higher is better)
+            if 'popularity_score' in popular_df.columns:
+                popular_df = popular_df.sort_values('popularity_score', ascending=False)
+            elif 'view_count' in popular_df.columns:
+                popular_df = popular_df.sort_values('view_count', ascending=False)
+            elif 'save_count' in popular_df.columns:
+                popular_df = popular_df.sort_values('save_count', ascending=False)
+            
+            # Limit results
+            popular_df = popular_df.head(limit)
+            
+            # Convert to list of dictionaries
+            popular_coupons = []
+            for _, row in popular_df.iterrows():
+                coupon_data = {
+                    'coupon_id': str(row.get('coupon_id', row.get('id', ''))),
+                    'title': row.get('title'),
+                    'category': row.get('category'),
+                    'description': row.get('description'),
+                    'discount_percentage': row.get('discount_percentage'),
+                    'expires_at': row.get('expires_at'),
+                    'popularity_score': row.get('popularity_score'),
+                    'view_count': row.get('view_count'),
+                    'save_count': row.get('save_count'),
+                    'vote_score': row.get('vote_score'),
+                    'coupon_type': row.get('coupon_type', 'regular'),
+                    'days_until_expiry': row.get('days_until_expiry'),
+                    'is_trending': row.get('is_trending', False)
+                }
+                popular_coupons.append(coupon_data)
+            
+            return {
+                "popular_coupons": popular_coupons,
+                "total_count": len(popular_coupons),
+                "category_filter": category,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            return {"error": f"Failed to get popular coupons: {str(e)}"}
+    
+    async def _enrich_popular_coupons_with_fresh_data(self, popular_coupons: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Enrich popular coupons with fresh data from database"""
+        try:
+            url, key = get_supabase_credentials()
+            if not url or not key:
+                return popular_coupons
+            
+            db = SupabaseConnector(url, key)
+            if not db.connect():
+                return popular_coupons
+            
+            # Get coupon IDs
+            coupon_ids = [coupon['coupon_id'] for coupon in popular_coupons]
+            
+            if coupon_ids:
+                # Fetch fresh coupon details
+                fresh_coupons = db.client.table('coupons').select(
+                    'id, title, category, description, discount_percentage, is_active, expires_at'
+                ).in_('id', coupon_ids).eq('is_active', True).execute()
+                
+                if fresh_coupons.data:
+                    fresh_coupon_dict = {c['id']: c for c in fresh_coupons.data}
+                    
+                    # Enrich popular coupons with fresh data
+                    for coupon in popular_coupons:
+                        coupon_id = coupon['coupon_id']
+                        if coupon_id in fresh_coupon_dict:
+                            fresh_data = fresh_coupon_dict[coupon_id]
+                            coupon.update({
+                                'title': fresh_data.get('title') or coupon.get('title'),
+                                'description': fresh_data.get('description') or coupon.get('description'),
+                                'discount_percentage': fresh_data.get('discount_percentage') or coupon.get('discount_percentage'),
+                                'expires_at': fresh_data.get('expires_at') or coupon.get('expires_at'),
+                                'fresh_data': True
+                            })
+            
+            db.close()
+            
+        except Exception as e:
+            print(f"⚠️ Failed to enrich popular coupons with fresh data: {e}")
+        
+        return popular_coupons
+    
     async def get_model_metrics(self) -> Dict[str, Any]:
         """Get model performance metrics"""
         if self.rec_system:
