@@ -2,7 +2,7 @@ services:
   - type: web
     name: lightfm-recommendation-api
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: python -m pip install --upgrade pip setuptools wheel && python -m pip install --no-use-pep517 lightfm && pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: SUPABASE_URL
