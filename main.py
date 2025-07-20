@@ -3,7 +3,7 @@ FastAPI LightFM Coupon Recommendation System
 Production-ready API for coupon recommendations
 """
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
@@ -70,6 +70,15 @@ async def health_check():
         message="Service is operational" if is_healthy else "Service has issues",
         timestamp=datetime.now().isoformat()
     )
+
+@app.head("/health")
+async def health_check_head():
+    """Health check for HEAD requests (no body returned)"""
+    is_healthy = await recommendation_service.health_check()
+    # Return 200 if healthy, 503 if not
+    if not is_healthy:
+        return Response(status_code=503)
+    return
 
 @app.get("/model/status", response_model=ModelStatusResponse)
 async def get_model_status():
