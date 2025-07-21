@@ -355,12 +355,13 @@ class RecommendationService:
             if not self.data_loader.load_all_data():
                 return False
             
-            # Build and train model
+            # Build and train model with optimized parameters for sparse data
             self.rec_system = LightFMRecommendationSystem(self.data_loader)
             self.rec_system.prepare_dataset()
             self.rec_system.build_interaction_matrix()
             self.rec_system.build_feature_matrices()
-            self.rec_system.train_model(epochs=50)  # Reduced epochs for faster training
+            # Use optimized parameters: BPR loss, lower learning rate, fewer components and epochs
+            self.rec_system.train_model(loss='bpr', learning_rate=0.01, no_components=20, epochs=30)
             
             # Cache the model
             await self.save_model_cache()

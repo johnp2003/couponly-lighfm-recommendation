@@ -125,18 +125,20 @@ class LightFMRecommendationSystem:
         print(f"✅ Item features matrix: {self.item_features_matrix.shape}")
         print("🔧 Using identity matrices to avoid feature confusion")
         
-    def train_model(self, loss='warp', learning_rate=0.05, no_components=50, epochs=100):
-        """Train the LightFM model"""
-        print(f"\n🚀 Training LightFM model...")
-        print(f"   Loss: {loss}")
-        print(f"   Learning rate: {learning_rate}")
-        print(f"   Components: {no_components}")
-        print(f"   Epochs: {epochs}")
+    def train_model(self, loss='bpr', learning_rate=0.01, no_components=20, epochs=30):
+        """Train the LightFM model with optimized parameters for sparse data"""
+        print(f"\n🚀 Training LightFM model with sparse data optimizations...")
+        print(f"   Loss: {loss} (BPR works better for sparse data)")
+        print(f"   Learning rate: {learning_rate} (reduced for stability)")
+        print(f"   Components: {no_components} (reduced to prevent overfitting)")
+        print(f"   Epochs: {epochs} (reduced for sparse data)")
         
         self.model = LightFM(
             loss=loss,
             learning_rate=learning_rate,
             no_components=no_components,
+            item_alpha=0.0001,  # Item regularization to prevent overfitting
+            user_alpha=0.0001,  # User regularization to prevent overfitting
             random_state=42
         )
         
@@ -193,9 +195,9 @@ class LightFMRecommendationSystem:
         }
     
     def get_recommendations(self, user_id: str, num_recommendations: int = 10, filter_seen: bool = True) -> List[Dict[str, Any]]:
-        """Get recommendations for a user"""
+        """Get recommendations for a user with improved cold start handling"""
         if user_id not in self.user_id_map:
-            print(f"❌ User {user_id} not found in training data")
+            print(f"🔄 User {user_id} not found in training data, using cold start recommendations")
             return self._get_cold_start_recommendations(num_recommendations)
         
         user_idx = self.user_id_map[user_id]
@@ -270,8 +272,71 @@ class LightFMRecommendationSystem:
         return recommendations
     
     def _get_cold_start_recommendations(self, num_recommendations: int = 10) -> List[Dict[str, Any]]:
-        """Fallback for new users - return popular coupons"""
-        return self.data_loader.popular_coupons_df.head(num_recommendations).to_dict('records')
+        """Improved fallback for new users - return diverse popular coupons"""
+        try:
+            # Get popular coupons with category diversity
+            popular_df = self.data_loader.popular_coupons_df.copy()
+            
+            # Ensure we have the required columns and convert to proper format
+            recommendations = []
+            categories_used = set()
+            
+            # First pass: get one from each category to ensure diversity
+            for _, row in popular_df.iterrows():
+                if len(recommendations) >= num_recommendations:
+                    break
+                    
+                category = row.get('category', 'Unknown')
+                if category not in categories_used:
+                    recommendations.append({
+                        'coupon_id': str(row.get('coupon_id', '')),
+                        'score': float(row.get('popularity_score', 0)) / 10.0,  # Normalize to reasonable range
+                        'category': category,
+                        'title': row.get('title'),
+                        'description': row.get('description'),
+                        'discount_percentage': row.get('discount_percentage'),
+                        'expires_at': row.get('expires_at'),
+                        'has_image': False,
+                        'days_until_expiry': row.get('days_until_expiry'),
+                        'view_count': int(row.get('view_count', 0)),
+                        'save_count': int(row.get('save_count', 0)),
+                        'vote_score': float(row.get('vote_score', 0)),
+                        'coupon_type': row.get('coupon_type', 'regular'),
+                        'fresh_data': None
+                    })
+                    categories_used.add(category)
+            
+            # Second pass: fill remaining slots with highest popularity
+            for _, row in popular_df.iterrows():
+                if len(recommendations) >= num_recommendations:
+                    break
+                    
+                coupon_id = str(row.get('coupon_id', ''))
+                if not any(rec['coupon_id'] == coupon_id for rec in recommendations):
+                    recommendations.append({
+                        'coupon_id': coupon_id,
+                        'score': float(row.get('popularity_score', 0)) / 10.0,
+                        'category': row.get('category', 'Unknown'),
+                        'title': row.get('title'),
+                        'description': row.get('description'),
+                        'discount_percentage': row.get('discount_percentage'),
+                        'expires_at': row.get('expires_at'),
+                        'has_image': False,
+                        'days_until_expiry': row.get('days_until_expiry'),
+                        'view_count': int(row.get('view_count', 0)),
+                        'save_count': int(row.get('save_count', 0)),
+                        'vote_score': float(row.get('vote_score', 0)),
+                        'coupon_type': row.get('coupon_type', 'regular'),
+                        'fresh_data': None
+                    })
+            
+            print(f"🎯 Generated {len(recommendations)} cold start recommendations with category diversity")
+            return recommendations
+            
+        except Exception as e:
+            print(f"⚠️ Error in cold start recommendations: {e}")
+            # Fallback to simple approach
+            return self.data_loader.popular_coupons_df.head(num_recommendations).to_dict('records')
     
     def get_similar_items(self, coupon_id: str, num_similar: int = 5) -> List[Dict[str, Any]]:
         """Get similar coupons"""
