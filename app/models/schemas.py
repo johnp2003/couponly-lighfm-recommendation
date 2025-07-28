@@ -10,6 +10,8 @@ class RecommendationRequest(BaseModel):
     user_id: str = Field(..., description="User ID to get recommendations for")
     num_recommendations: int = Field(default=10, ge=1, le=50, description="Number of recommendations to return")
     fresh_coupon_data: bool = Field(default=True, description="Whether to fetch fresh coupon data")
+    categories: Optional[List[str]] = Field(default=None, description="Filter recommendations by categories")
+    exclude_categories: Optional[List[str]] = Field(default=None, description="Exclude specific categories from recommendations")
 
 class CouponRecommendation(BaseModel):
     coupon_id: str

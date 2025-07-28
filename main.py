@@ -93,7 +93,9 @@ async def get_recommendations(request: RecommendationRequest):
         recommendations = await recommendation_service.get_recommendations(
             user_id=request.user_id,
             num_recommendations=request.num_recommendations,
-            fresh_coupon_data=request.fresh_coupon_data
+            fresh_coupon_data=request.fresh_coupon_data,
+            categories=request.categories,
+            exclude_categories=request.exclude_categories
         )
         
         return RecommendationResponse(**recommendations)
@@ -180,6 +182,51 @@ async def get_popular_coupons_get(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Popular coupons retrieval failed: {str(e)}")
+
+@app.get("/recommendations/{user_id}", response_model=RecommendationResponse)
+async def get_recommendations_get(
+    user_id: str,
+    num_recommendations: int = 10,
+    fresh_coupon_data: bool = True,
+    categories: Optional[str] = None,
+    exclude_categories: Optional[str] = None
+):
+    """Get personalized coupon recommendations for a user (GET endpoint)"""
+    try:
+        # Parse comma-separated categories
+        categories_list = [cat.strip() for cat in categories.split(',')] if categories else None
+        exclude_categories_list = [cat.strip() for cat in exclude_categories.split(',')] if exclude_categories else None
+        
+        recommendations = await recommendation_service.get_recommendations(
+            user_id=user_id,
+            num_recommendations=num_recommendations,
+            fresh_coupon_data=fresh_coupon_data,
+            categories=categories_list,
+            exclude_categories=exclude_categories_list
+        )
+        
+        return RecommendationResponse(**recommendations)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Recommendation generation failed: {str(e)}")
+
+@app.get("/categories")
+async def get_available_categories():
+    """Get list of available coupon categories"""
+    return {
+        "categories": [
+            "Food & Drink",
+            "Fashion", 
+            "Tech",
+            "Beauty",
+            "Home & Living",
+            "Travel",
+            "E-commerce"
+        ],
+        "description": "Available categories for filtering recommendations",
+        "usage": "Use these category names (case-insensitive) in your requests",
+        "timestamp": datetime.now().isoformat()
+    }
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))

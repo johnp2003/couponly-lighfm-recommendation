@@ -175,7 +175,8 @@ class RecommendationService:
         except Exception as e:
             print(f"❌ Failed to cache model: {e}")
     
-    async def get_recommendations(self, user_id: str, num_recommendations: int = 10, fresh_coupon_data: bool = True) -> Dict[str, Any]:
+    async def get_recommendations(self, user_id: str, num_recommendations: int = 10, fresh_coupon_data: bool = True, 
+                                categories: Optional[List[str]] = None, exclude_categories: Optional[List[str]] = None) -> Dict[str, Any]:
         """Get recommendations with caching and optimization"""
         with self.model_lock:
             # Check if we need to retrain
@@ -187,7 +188,17 @@ class RecommendationService:
             
             # Generate recommendations
             try:
-                recommendations = self.rec_system.get_recommendations(user_id, num_recommendations)
+                # Get more recommendations if filtering is needed
+                initial_count = num_recommendations * 3 if (categories or exclude_categories) else num_recommendations
+                recommendations = self.rec_system.get_recommendations(user_id, initial_count)
+                
+                # Apply category filtering if specified
+                if categories or exclude_categories:
+                    recommendations = self._filter_recommendations_by_category(
+                        recommendations, categories, exclude_categories
+                    )
+                    # Trim to requested number after filtering
+                    recommendations = recommendations[:num_recommendations]
                 
                 result = {
                     "user_id": user_id,
@@ -324,6 +335,44 @@ class RecommendationService:
         
         return popular_coupons
     
+    def _filter_recommendations_by_category(self, recommendations: List[Dict[str, Any]], 
+                                           categories: Optional[List[str]] = None, 
+                                           exclude_categories: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+        """Simple category filtering for recommendations"""
+        if not recommendations or (not categories and not exclude_categories):
+            return recommendations
+        
+        filtered = []
+        for rec in recommendations:
+            rec_category = rec.get('category', '').lower().strip()
+            
+            # Skip items without category if we're filtering by specific categories
+            if not rec_category and categories:
+                continue
+            
+            # Check exclude categories first
+            if exclude_categories:
+                should_exclude = any(
+                    exclude_cat.lower().strip() in rec_category or rec_category in exclude_cat.lower().strip()
+                    for exclude_cat in exclude_categories
+                )
+                if should_exclude:
+                    continue
+            
+            # Check include categories
+            if categories:
+                should_include = any(
+                    cat.lower().strip() in rec_category or rec_category in cat.lower().strip()
+                    for cat in categories
+                )
+                if should_include:
+                    filtered.append(rec)
+            else:
+                # No include filter, just exclude filter applied above
+                filtered.append(rec)
+        
+        return filtered
+
     async def get_model_metrics(self) -> Dict[str, Any]:
         """Get model performance metrics"""
         if self.rec_system:
