@@ -19,10 +19,10 @@ class SupabaseConnector:
         try:
             self.client = None
             self.client = create_client(self.url, self.key)
-            print("✅ Connected to Supabase successfully! (Fresh connection)")
+            print("Connected to Supabase successfully! (Fresh connection)")
             return True
         except Exception as e:
-            print(f"❌ Supabase connection failed: {e}")
+            print(f"Supabase connection failed: {e}")
             return False
     
     def execute_query(self, query: str) -> Optional[pd.DataFrame]:
@@ -33,7 +33,7 @@ class SupabaseConnector:
                 
                 # Force fresh data by adding timestamp parameter
                 cache_buster = int(time.time())
-                print(f"🔄 Executing {func_name}() with cache buster: {cache_buster}")
+                print(f"Executing {func_name}() with cache buster: {cache_buster}")
                 
                 # Try calling RPC function with empty params first, then without params
                 try:
@@ -48,27 +48,27 @@ class SupabaseConnector:
                 
                 if result.data:
                     df = pd.DataFrame(result.data)
-                    print(f"✅ Executed {func_name}() - returned {len(df)} rows (fresh data)")
+                    print(f"Executed {func_name}() - returned {len(df)} rows (fresh data)")
                     
                     # Debug: Print first few rows for verification
                     if func_name == "get_lightfm_interaction_matrix" and len(df) > 0:
-                        print(f"🔍 Sample data: {df.head(3)[['user_id', 'coupon_id', 'total_weight']].to_dict('records')}")
+                        print(f"Sample data: {df.head(3)[['user_id', 'coupon_id', 'total_weight']].to_dict('records')}")
                     
                     return df
                 else:
-                    print(f"⚠️  {func_name}() returned no data")
+                    print(f"Warning: {func_name}() returned no data")
                     return pd.DataFrame()
             else:
-                print(f"❌ Unsupported query format: {query}")
+                print(f"Unsupported query format: {query}")
                 return None
                 
         except Exception as e:
-            print(f"❌ Query execution failed: {e}")
+            print(f"Query execution failed: {e}")
             return None
     
     def close(self):
         """Close connection"""
-        print("🔒 Supabase connection closed")
+        print("Supabase connection closed")
 
 class CouponDataLoader:
     def __init__(self, db_connector: SupabaseConnector):
@@ -81,7 +81,7 @@ class CouponDataLoader:
         
     def load_all_data(self) -> bool:
         """Load all required data from database"""
-        print("📊 Loading interaction data with cache clearing...")
+        print("Loading interaction data with cache clearing...")
         
         # Force fresh connection before loading data
         self.db.connect()
@@ -101,11 +101,11 @@ class CouponDataLoader:
         # Load ALL active coupons
         self.load_all_active_coupons()
         
-        print(f"✅ Loaded {len(self.interactions_df)} interactions")
-        print(f"✅ Loaded {len(self.user_features_df)} users")
-        print(f"✅ Loaded {len(self.item_features_df)} coupons from features")
-        print(f"✅ Loaded {len(self.all_coupons_df)} total active coupons")
-        print(f"✅ Loaded {len(self.popular_coupons_df)} popular coupons")
+        print(f"Loaded {len(self.interactions_df)} interactions")
+        print(f"Loaded {len(self.user_features_df)} users")
+        print(f"Loaded {len(self.item_features_df)} coupons from features")
+        print(f"Loaded {len(self.all_coupons_df)} total active coupons")
+        print(f"Loaded {len(self.popular_coupons_df)} popular coupons")
         
         return self.validate_data()
     
@@ -125,11 +125,11 @@ class CouponDataLoader:
             else:
                 self.all_coupons_df = pd.DataFrame()
             
-            print(f"🔍 Found {len(regular_df)} regular coupons (vendor coupons excluded)")
-            print(f"🎯 Total active coupons: {len(self.all_coupons_df)}")
+            print(f"Found {len(regular_df)} regular coupons (vendor coupons excluded)")
+            print(f"Total active coupons: {len(self.all_coupons_df)}")
             
         except Exception as e:
-            print(f"❌ Error loading all coupons: {e}")
+            print(f"Error loading all coupons: {e}")
             self.all_coupons_df = pd.DataFrame()
     
     def validate_data(self) -> bool:
@@ -138,10 +138,10 @@ class CouponDataLoader:
             self.interactions_df, self.user_features_df, 
             self.item_features_df, self.popular_coupons_df, self.all_coupons_df
         ]):
-            print("❌ Data validation failed - some datasets are empty")
+            print("Data validation failed - some datasets are empty")
             return False
         
-        print("✅ Data validation passed")
+        print("Data validation passed")
         return True
 
 def get_supabase_credentials() -> Tuple[Optional[str], Optional[str]]:
@@ -150,7 +150,7 @@ def get_supabase_credentials() -> Tuple[Optional[str], Optional[str]]:
     key = os.getenv('EXPO_PUBLIC_SUPABASE_ANON_KEY') or os.getenv('SUPABASE_ANON_KEY')
     
     if not url or not key:
-        print("⚠️  Please set SUPABASE_URL and SUPABASE_ANON_KEY environment variables")
+        print("Warning: Please set SUPABASE_URL and SUPABASE_ANON_KEY environment variables")
         return None, None
     
     return url, key

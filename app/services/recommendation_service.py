@@ -35,11 +35,11 @@ class RecommendationService:
         try:
             # Try to load cached model first
             if not await self.load_cached_model():
-                print("🔄 No cached model found, training fresh model...")
+                print("No cached model found, training fresh model...")
                 return await self.train_fresh_model()
             return True
         except Exception as e:
-            print(f"❌ Initialization failed: {e}")
+            print(f"Initialization failed: {e}")
             return False
     
     async def health_check(self) -> bool:
@@ -63,7 +63,7 @@ class RecommendationService:
             return True
             
         except Exception as e:
-            print(f"❌ Health check failed: {e}")
+            print(f"Health check failed: {e}")
             return False
     
     async def get_model_status(self) -> Dict[str, Any]:
@@ -94,7 +94,7 @@ class RecommendationService:
         if self.last_trained:
             time_diff = datetime.now() - self.last_trained
             if time_diff > timedelta(hours=self.RETRAIN_INTERVAL_HOURS):
-                print(f"🕒 Time-based retrain needed (last trained: {time_diff} ago)")
+                print(f"Time-based retrain needed (last trained: {time_diff} ago)")
                 return True
         
         return False
@@ -115,10 +115,10 @@ class RecommendationService:
                         metadata = json.load(f)
                         self.last_trained = datetime.fromisoformat(metadata['last_trained'])
                 
-                print(f"✅ Loaded cached model from {self.last_trained}")
+                print(f"Loaded cached model from {self.last_trained}")
                 return True
         except Exception as e:
-            print(f"⚠️ Failed to load cached model: {e}")
+            print(f"Failed to load cached model: {e}")
             return False
         
         return False
@@ -170,10 +170,10 @@ class RecommendationService:
                     json.dump(metadata, f, indent=2)
                 
                 self.last_trained = datetime.now()
-                print("✅ Model cached successfully")
+                print("Model cached successfully")
                 
         except Exception as e:
-            print(f"❌ Failed to cache model: {e}")
+            print(f"Failed to cache model: {e}")
     
     async def get_recommendations(self, user_id: str, num_recommendations: int = 10, fresh_coupon_data: bool = True, 
                                 categories: Optional[List[str]] = None, exclude_categories: Optional[List[str]] = None) -> Dict[str, Any]:
@@ -181,7 +181,7 @@ class RecommendationService:
         with self.model_lock:
             # Check if we need to retrain
             if await self.should_retrain() or self.rec_system is None:
-                print("🔄 Model needs retraining...")
+                print("Model needs retraining...")
                 success = await self.train_fresh_model()
                 if not success:
                     return {"error": "Failed to train model"}
@@ -331,7 +331,7 @@ class RecommendationService:
             db.close()
             
         except Exception as e:
-            print(f"⚠️ Failed to enrich popular coupons with fresh data: {e}")
+            print(f"Failed to enrich popular coupons with fresh data: {e}")
         
         return popular_coupons
     
@@ -388,7 +388,7 @@ class RecommendationService:
     async def train_fresh_model(self) -> bool:
         """Train a fresh model"""
         try:
-            print("🚀 Training fresh model...")
+            print("Training fresh model...")
             
             # Get database connection
             url, key = get_supabase_credentials()
@@ -419,7 +419,7 @@ class RecommendationService:
             return True
             
         except Exception as e:
-            print(f"❌ Fresh model training failed: {e}")
+            print(f"Fresh model training failed: {e}")
             return False
     
     async def _enrich_with_fresh_coupon_data(self, recommendations_response: Dict[str, Any]) -> Dict[str, Any]:
@@ -461,6 +461,6 @@ class RecommendationService:
             db.close()
             
         except Exception as e:
-            print(f"⚠️ Failed to enrich with fresh data: {e}")
+            print(f"Failed to enrich with fresh data: {e}")
         
         return recommendations_response

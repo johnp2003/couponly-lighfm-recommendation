@@ -32,7 +32,7 @@ class LightFMRecommendationSystem:
         
     def prepare_dataset(self):
         """Prepare LightFM dataset"""
-        print("\n🔧 Preparing LightFM dataset...")
+        print("\nPreparing LightFM dataset...")
         
         # Initialize dataset
         self.dataset = Dataset()
@@ -52,28 +52,28 @@ class LightFMRecommendationSystem:
         
         items = list(all_active_items)
         
-        print(f"🔍 Total unique users: {len(users)}")
-        print(f"🔍 Total active coupons: {len(all_active_items)}")
-        print(f"🔍 Coupons with interactions: {len(interaction_items)}")
-        print(f"🔍 Coupons without interactions: {len(all_active_items - interaction_items)}")
+        print(f"Total unique users: {len(users)}")
+        print(f"Total active coupons: {len(all_active_items)}")
+        print(f"Coupons with interactions: {len(interaction_items)}")
+        print(f"Coupons without interactions: {len(all_active_items - interaction_items)}")
         
         # Fit dataset with ALL active coupons
-        print("🔧 Fitting dataset with ALL active coupons (including zero-interaction ones)...")
+        print("Fitting dataset with ALL active coupons (including zero-interaction ones)...")
         self.dataset.fit(users=users, items=items)
         
         # Verify mappings
         temp_user_feature_map, temp_user_id_map, temp_item_feature_map, temp_item_id_map = self.dataset.mapping()
         
-        print(f"✅ Clean mappings created:")
+        print(f"Clean mappings created:")
         print(f"   Users: {len(temp_user_id_map)} (expected: {len(users)})")
         print(f"   Items: {len(temp_item_id_map)} (expected: {len(items)})")
         
-        print(f"✅ Dataset prepared with {len(users)} users and {len(items)} items")
-        print(f"🎯 Now ALL active coupons can be recommended!")
+        print(f"Dataset prepared with {len(users)} users and {len(items)} items")
+        print(f"Now ALL active coupons can be recommended!")
         
     def build_interaction_matrix(self):
         """Build interaction matrices"""
-        print("\n🔨 Building interaction matrices...")
+        print("\nBuilding interaction matrices...")
         
         interactions_with_weights = []
         
@@ -84,9 +84,9 @@ class LightFMRecommendationSystem:
             interactions_with_weights.append((user_id, coupon_id, weight))
             
             if len(interactions_with_weights) <= 5:
-                print(f"🔍 Added interaction: user={user_id}, item={coupon_id}, weight={weight}")
+                print(f"Added interaction: user={user_id}, item={coupon_id}, weight={weight}")
         
-        print(f"🔍 Total interactions for training: {len(interactions_with_weights)}")
+        print(f"Total interactions for training: {len(interactions_with_weights)}")
         
         # Build interaction matrix
         interaction_matrix, weights_matrix = self.dataset.build_interactions(interactions_with_weights)
@@ -96,7 +96,7 @@ class LightFMRecommendationSystem:
         self.reverse_user_map = {v: k for k, v in self.user_id_map.items()}
         self.reverse_item_map = {v: k for k, v in self.item_id_map.items()}
         
-        print(f"🔍 Final LightFM mappings:")
+        print(f"Final LightFM mappings:")
         print(f"   Users: {len(self.user_id_map)} mapped")
         print(f"   Items: {len(self.item_id_map)} mapped")
         
@@ -105,13 +105,13 @@ class LightFMRecommendationSystem:
             interaction_matrix, test_percentage=0.2, random_state=42
         )
         
-        print(f"✅ Built interaction matrix: {interaction_matrix.shape}")
-        print(f"✅ Train interactions: {self.train_interactions.nnz}")
-        print(f"✅ Test interactions: {self.test_interactions.nnz}")
+        print(f"Built interaction matrix: {interaction_matrix.shape}")
+        print(f"Train interactions: {self.train_interactions.nnz}")
+        print(f"Test interactions: {self.test_interactions.nnz}")
         
     def build_feature_matrices(self):
         """Build feature matrices"""
-        print("\n🎯 Building feature matrices...")
+        print("\nBuilding feature matrices...")
         
         # Use identity matrices to ensure the system works
         num_users = len(self.user_id_map)
@@ -121,13 +121,13 @@ class LightFMRecommendationSystem:
         self.user_features_matrix = identity(num_users, format='csr')
         self.item_features_matrix = identity(num_items, format='csr')
         
-        print(f"✅ User features matrix: {self.user_features_matrix.shape}")
-        print(f"✅ Item features matrix: {self.item_features_matrix.shape}")
-        print("🔧 Using identity matrices to avoid feature confusion")
+        print(f"User features matrix: {self.user_features_matrix.shape}")
+        print(f"Item features matrix: {self.item_features_matrix.shape}")
+        print("Using identity matrices to avoid feature confusion")
         
     def train_model(self, loss='bpr', learning_rate=0.01, no_components=20, epochs=30):
         """Train the LightFM model with optimized parameters for sparse data"""
-        print(f"\n🚀 Training LightFM model with sparse data optimizations...")
+        print(f"\nTraining LightFM model with sparse data optimizations...")
         print(f"   Loss: {loss} (BPR works better for sparse data)")
         print(f"   Learning rate: {learning_rate} (reduced for stability)")
         print(f"   Components: {no_components} (reduced to prevent overfitting)")
@@ -150,11 +150,11 @@ class LightFMRecommendationSystem:
             verbose=True
         )
         
-        print("✅ Model training completed!")
+        print("Model training completed!")
         
     def evaluate_model(self) -> Dict[str, float]:
         """Evaluate model performance"""
-        print("\n📊 Evaluating model performance...")
+        print("\nEvaluating model performance...")
         
         train_precision = precision_at_k(
             self.model, self.train_interactions,
@@ -182,10 +182,10 @@ class LightFMRecommendationSystem:
             item_features=self.item_features_matrix
         ).mean()
         
-        print(f"📈 Training Precision@5: {train_precision:.4f}")
-        print(f"📈 Test Precision@5: {test_precision:.4f}")
-        print(f"📈 Training AUC: {train_auc:.4f}")
-        print(f"📈 Test AUC: {test_auc:.4f}")
+        print(f"Training Precision@5: {train_precision:.4f}")
+        print(f"Test Precision@5: {test_precision:.4f}")
+        print(f"Training AUC: {train_auc:.4f}")
+        print(f"Test AUC: {test_auc:.4f}")
         
         return {
             'train_precision': float(train_precision),
@@ -197,7 +197,7 @@ class LightFMRecommendationSystem:
     def get_recommendations(self, user_id: str, num_recommendations: int = 10, filter_seen: bool = True) -> List[Dict[str, Any]]:
         """Get recommendations for a user with improved cold start handling"""
         if user_id not in self.user_id_map:
-            print(f"🔄 User {user_id} not found in training data, using cold start recommendations")
+            print(f"User {user_id} not found in training data, using cold start recommendations")
             return self._get_cold_start_recommendations(num_recommendations)
         
         user_idx = self.user_id_map[user_id]
@@ -268,7 +268,7 @@ class LightFMRecommendationSystem:
                             'vote_score': 0.0
                         })
         
-        print(f"🎯 Generated {len(recommendations)} recommendations for user {user_id}")
+        print(f"Generated {len(recommendations)} recommendations for user {user_id}")
         return recommendations
     
     def _get_cold_start_recommendations(self, num_recommendations: int = 10) -> List[Dict[str, Any]]:
@@ -330,18 +330,18 @@ class LightFMRecommendationSystem:
                         'fresh_data': None
                     })
             
-            print(f"🎯 Generated {len(recommendations)} cold start recommendations with category diversity")
-            return recommendations
+                    print(f"Generated {len(recommendations)} cold start recommendations with category diversity")
+        return recommendations
             
         except Exception as e:
-            print(f"⚠️ Error in cold start recommendations: {e}")
+            print(f"Error in cold start recommendations: {e}")
             # Fallback to simple approach
             return self.data_loader.popular_coupons_df.head(num_recommendations).to_dict('records')
     
     def get_similar_items(self, coupon_id: str, num_similar: int = 5) -> List[Dict[str, Any]]:
         """Get similar coupons"""
         if coupon_id not in self.item_id_map:
-            print(f"❌ Coupon {coupon_id} not found")
+            print(f"Coupon {coupon_id} not found")
             return []
         
         item_idx = self.item_id_map[coupon_id]

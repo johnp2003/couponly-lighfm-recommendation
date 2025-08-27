@@ -47,9 +47,9 @@ recommendation_service = RecommendationService()
 @app.on_event("startup")
 async def startup_event():
     """Initialize the recommendation system on startup"""
-    print("🚀 Starting LightFM Recommendation API...")
+    print("Starting LightFM Recommendation API...")
     await recommendation_service.initialize()
-    print("✅ Recommendation service initialized")
+    print("Recommendation service initialized")
 
 @app.get("/", response_model=HealthResponse)
 async def root():
