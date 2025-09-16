@@ -330,8 +330,8 @@ class LightFMRecommendationSystem:
                         'fresh_data': None
                     })
             
-                    print(f"Generated {len(recommendations)} cold start recommendations with category diversity")
-        return recommendations
+            print(f"Generated {len(recommendations)} cold start recommendations with category diversity")
+            return recommendations
             
         except Exception as e:
             print(f"Error in cold start recommendations: {e}")
